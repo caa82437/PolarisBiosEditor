@@ -1,5 +1,6 @@
 ﻿using Microsoft.Win32;
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Windows;
@@ -12,50 +13,38 @@ namespace PolarisBiosEditor
     {
         Byte[] buffer;
         string[] supportedDeviceID = new string[] { "67DF" };
+        string deviceID = "";
 
         int infoPointer = 0;
         int headerPointer = 0;
         int dataPointer = 0;
         int powerPointer = 0;
         int limitOffset = 0;
-        int maxFreqOffset = 0;
+        int maxFreqOffset = 0x17;
         int vidOffset = 0;
         int dpmOffset = 0;
+        int memOffset = 0;
+        int dpmEntryOffset = 0x04;
+        int dpmEntrySize = 0x0F; // 0x0B - Fiji, 0x0F - Polaris
+        int dpmEntryCount = 0;
+        int vidEntryOffset = 0x01;
+        int vidEntrySize = 0x08;
+        int vidEntryCount = 0;
+        int memEntryOffset = 0x06;
+        int memEntrySize = 0x0D;
+        int memEntryCount = 0;
+
 
         public MainWindow()
         {
             InitializeComponent();
-            MainWindow.GetWindow(this).Title += " 1.0";
+            MainWindow.GetWindow(this).Title += " 1.1";
 
             save.IsEnabled = false;
-            txtDeviceID.IsEnabled = false;
-            txtVendorID.IsEnabled = false;
-            txtChecksum.IsReadOnly = true;
-
-            txtTDP.IsEnabled = false;
-            txtTDC.IsEnabled = false;
-            txtMPDL.IsEnabled = false;
-            txtThrottleTemp.IsEnabled = false;
-
-            txtMaxGPU.IsEnabled = false;
-            txtMaxMEM.IsEnabled = false;
-
-            txtDPM0.IsEnabled = false;
-            txtVID0.IsEnabled = false;
-            txtDPM1.IsEnabled = false;
-            txtVID1.IsEnabled = false;
-            txtDPM2.IsEnabled = false;
-            txtVID2.IsEnabled = false;
-            txtDPM3.IsEnabled = false;
-            txtVID3.IsEnabled = false;
-            txtDPM4.IsEnabled = false;
-            txtVID4.IsEnabled = false;
-            txtDPM5.IsEnabled = false;
-            txtVID5.IsEnabled = false;
-            txtDPM6.IsEnabled = false;
-            txtVID6.IsEnabled = false;
-            txtDPM7.IsEnabled = false;
-            txtVID7.IsEnabled = false;
+            boxInfo.IsEnabled = false;
+            boxPower.IsEnabled = false;
+            boxGPU.IsEnabled = false;
+            boxMem.IsEnabled = false;
 
             MessageBox.Show("Modifying your BIOS is dangerous and could cause irreversible damage to your GPU.\nUsing a modified BIOS may void your warranty.\nThe author will not be held accountable for your actions.", "DISCLAIMER", MessageBoxButton.OK, MessageBoxImage.Warning);
         }
@@ -68,6 +57,17 @@ namespace PolarisBiosEditor
             openFileDialog.Multiselect = false;
 
             if (openFileDialog.ShowDialog() == true) {
+                save.IsEnabled = false;
+
+                txtTDP.Clear();
+                txtTDC.Clear();
+                txtMPDL.Clear();
+                txtThrottleTemp.Clear();
+                txtMaxGPU.Clear();
+                txtMaxMEM.Clear();
+                tableGPU.Items.Clear();
+                tableMEM.Items.Clear();
+
                 System.IO.Stream fileStream = openFileDialog.OpenFile();
 
                 using (BinaryReader br = new BinaryReader(fileStream)) {
@@ -80,17 +80,25 @@ namespace PolarisBiosEditor
                     powerPointer = getValueAtPosition(16, dataPointer + 0x22);
                     limitOffset = getValueAtPosition(16, powerPointer + 0x39) + 0x01;
                     maxFreqOffset = 0x17;
-                    vidOffset = getValueAtPosition(16, powerPointer + 0x31) + 0x02;
-                    dpmOffset = getValueAtPosition(16, powerPointer + 0x2D) + 0x05;
 
-                    var deviceID = getValueAtPosition(16, infoPointer + 0x06).ToString("X");
+                    vidOffset = getValueAtPosition(16, powerPointer + 0x31) + 0x01;
+                    vidEntryCount = getValueAtPosition(8, powerPointer + vidOffset);
+
+                    dpmOffset = getValueAtPosition(16, powerPointer + 0x2D) + 0x01;
+                    dpmEntryCount = getValueAtPosition(8, powerPointer + dpmOffset);
+
+                    memOffset = getValueAtPosition(16, powerPointer + 0x2B) + 0x01;
+                    memEntryCount = getValueAtPosition(8, powerPointer + memOffset);
+
+                    deviceID = getValueAtPosition(16, infoPointer + 0x06).ToString("X");
                     txtDeviceID.Text = "0x" + deviceID;
                     txtVendorID.Text = "0x" + getValueAtPosition(16, infoPointer + 0x04).ToString("X");
                     txtChecksum.Text = "0x" + getValueAtPosition(8, 0x21).ToString("X");
 
                     if (!supportedDeviceID.Contains(deviceID)) {
-                        save.IsEnabled = false;
                         MessageBox.Show("Unsupported BIOS (0x" + deviceID + ")", "WARNING", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    } else if (dpmEntryCount != vidEntryCount) {
+                        MessageBox.Show("Invalid DPM/VID entries!", "WARNING", MessageBoxButton.OK, MessageBoxImage.Warning);
                     } else {
                         txtTDP.Text = getValueAtPosition(16, powerPointer + limitOffset).ToString();
                         txtTDC.Text = getValueAtPosition(16, powerPointer + limitOffset + 0x04).ToString();
@@ -100,52 +108,28 @@ namespace PolarisBiosEditor
                         txtMaxGPU.Text = getValueAtPosition(24, powerPointer + maxFreqOffset, true).ToString();
                         txtMaxMEM.Text = getValueAtPosition(24, powerPointer + maxFreqOffset + 0x04, true).ToString();
 
-                        txtDPM0.Text = getValueAtPosition(24, powerPointer + dpmOffset, true).ToString();
-                        txtDPM1.Text = getValueAtPosition(24, powerPointer + dpmOffset + 0x0F, true).ToString();
-                        txtDPM2.Text = getValueAtPosition(24, powerPointer + dpmOffset + 0x0F*2, true).ToString();
-                        txtDPM3.Text = getValueAtPosition(24, powerPointer + dpmOffset + 0x0F*3, true).ToString();
-                        txtDPM4.Text = getValueAtPosition(24, powerPointer + dpmOffset + 0x0F*4, true).ToString();
-                        txtDPM5.Text = getValueAtPosition(24, powerPointer + dpmOffset + 0x0F*5, true).ToString();
-                        txtDPM6.Text = getValueAtPosition(24, powerPointer + dpmOffset + 0x0F*6, true).ToString();
-                        txtDPM7.Text = getValueAtPosition(24, powerPointer + dpmOffset + 0x0F*7, true).ToString();
+                        tableGPU.Items.Clear();
+                        for (var i = 0; i < dpmEntryCount; i++) {
+                            tableGPU.Items.Add(new {
+                                DPM = getValueAtPosition(24, powerPointer + dpmOffset + dpmEntryOffset + dpmEntrySize*i, true).ToString(),
+                                VID = getValueAtPosition(16, powerPointer + vidOffset + vidEntryOffset + vidEntrySize*i).ToString()
+                            });
+                        }
 
-                        txtVID0.Text = getValueAtPosition(16, powerPointer + vidOffset).ToString();
-                        txtVID1.Text = getValueAtPosition(16, powerPointer + vidOffset + 0x08).ToString();
-                        txtVID2.Text = getValueAtPosition(16, powerPointer + vidOffset + 0x08*2).ToString();
-                        txtVID3.Text = getValueAtPosition(16, powerPointer + vidOffset + 0x08*3).ToString();
-                        txtVID4.Text = getValueAtPosition(16, powerPointer + vidOffset + 0x08*4).ToString();
-                        txtVID5.Text = getValueAtPosition(16, powerPointer + vidOffset + 0x08*5).ToString();
-                        txtVID6.Text = getValueAtPosition(16, powerPointer + vidOffset + 0x08*6).ToString();
-                        txtVID7.Text = getValueAtPosition(16, powerPointer + vidOffset + 0x08*7).ToString();
+                        tableMEM.Items.Clear();
+                        for (var i = 0; i < memEntryCount; i++) {
+                            tableMEM.Items.Add(new
+                            {
+                                DPM = getValueAtPosition(24, powerPointer + memOffset + memEntryOffset + memEntrySize*i + 0x02, true).ToString(),
+                                VID = getValueAtPosition(16, powerPointer + memOffset + memEntryOffset + memEntrySize*i).ToString()
+                            });
+                        }
 
                         save.IsEnabled = true;
-                        txtDeviceID.IsEnabled = true;
-                        txtVendorID.IsEnabled = true;
-
-                        txtTDP.IsEnabled = true;
-                        txtTDC.IsEnabled = true;
-                        txtMPDL.IsEnabled = true;
-                        txtThrottleTemp.IsEnabled = true;
-
-                        txtMaxGPU.IsEnabled = true;
-                        txtMaxMEM.IsEnabled = true;
-
-                        txtDPM0.IsEnabled = true;
-                        txtVID0.IsEnabled = true;
-                        txtDPM1.IsEnabled = true;
-                        txtVID1.IsEnabled = true;
-                        txtDPM2.IsEnabled = true;
-                        txtVID2.IsEnabled = true;
-                        txtDPM3.IsEnabled = true;
-                        txtVID3.IsEnabled = true;
-                        txtDPM4.IsEnabled = true;
-                        txtVID4.IsEnabled = true;
-                        txtDPM5.IsEnabled = true;
-                        txtVID5.IsEnabled = true;
-                        txtDPM6.IsEnabled = true;
-                        txtVID6.IsEnabled = true;
-                        txtDPM7.IsEnabled = true;
-                        txtVID7.IsEnabled = true;
+                        boxInfo.IsEnabled = true;
+                        boxPower.IsEnabled = true;
+                        boxGPU.IsEnabled = true;
+                        boxMem.IsEnabled = true;
                     }
                     fileStream.Close();
                 }
@@ -237,23 +221,23 @@ namespace PolarisBiosEditor
                 setValueAtPosition(txtMaxGPU.Text, 24, powerPointer + maxFreqOffset, true);
                 setValueAtPosition(txtMaxMEM.Text, 24, powerPointer + maxFreqOffset + 0x04, true);
 
-                setValueAtPosition(txtDPM0.Text, 24, powerPointer + dpmOffset, true);
-                setValueAtPosition(txtDPM1.Text, 24, powerPointer + dpmOffset + 0x0F, true);
-                setValueAtPosition(txtDPM2.Text, 24, powerPointer + dpmOffset + 0x0F*2, true);
-                setValueAtPosition(txtDPM3.Text, 24, powerPointer + dpmOffset + 0x0F*3, true);
-                setValueAtPosition(txtDPM4.Text, 24, powerPointer + dpmOffset + 0x0F*4, true);
-                setValueAtPosition(txtDPM5.Text, 24, powerPointer + dpmOffset + 0x0F*5, true);
-                setValueAtPosition(txtDPM6.Text, 24, powerPointer + dpmOffset + 0x0F*6, true);
-                setValueAtPosition(txtDPM7.Text, 24, powerPointer + dpmOffset + 0x0F*7, true);
+                for (var i = 0; i < dpmEntryCount; i++) {
+                    var container = tableGPU.ItemContainerGenerator.ContainerFromIndex(i) as FrameworkElement;
+                    var dpm = FindByName("DPM", container) as TextBox;
+                    var vid = FindByName("VID", container) as TextBox;
 
-                setValueAtPosition(txtVID0.Text, 16, powerPointer + vidOffset);
-                setValueAtPosition(txtVID1.Text, 16, powerPointer + vidOffset + 0x08);
-                setValueAtPosition(txtVID2.Text, 16, powerPointer + vidOffset + 0x08*2);
-                setValueAtPosition(txtVID3.Text, 16, powerPointer + vidOffset + 0x08*3);
-                setValueAtPosition(txtVID4.Text, 16, powerPointer + vidOffset + 0x08*4);
-                setValueAtPosition(txtVID5.Text, 16, powerPointer + vidOffset + 0x08*5);
-                setValueAtPosition(txtVID6.Text, 16, powerPointer + vidOffset + 0x08*6);
-                setValueAtPosition(txtVID7.Text, 16, powerPointer + vidOffset + 0x08*7);
+                    setValueAtPosition(dpm.Text, 24, powerPointer + dpmOffset + dpmEntryOffset + dpmEntrySize*i, true);
+                    setValueAtPosition(vid.Text, 16, powerPointer + vidOffset + vidEntryOffset + vidEntrySize*i);
+                }
+
+                for (var i = 0; i < memEntryCount; i++) {
+                    var container = tableMEM.ItemContainerGenerator.ContainerFromIndex(i) as FrameworkElement;
+                    var dpm = FindByName("DPM", container) as TextBox;
+                    var vid = FindByName("VID", container) as TextBox;
+
+                    setValueAtPosition(dpm.Text, 24, powerPointer + memOffset + memEntryOffset + memEntrySize * i + 0x02, true);
+                    setValueAtPosition(vid.Text, 16, powerPointer + memOffset + memEntryOffset + memEntrySize * i);
+                }
 
                 fixChecksum(true);
                 bw.Write(buffer);
@@ -283,6 +267,29 @@ namespace PolarisBiosEditor
                 txtChecksum.Text = "0x" + getValueAtPosition(8, 0x21).ToString("X");
                 txtChecksum.Foreground = Brushes.Green;
             }
+        }
+
+        private FrameworkElement FindByName(string name, FrameworkElement root)
+        {
+            Stack<FrameworkElement> tree = new Stack<FrameworkElement>();
+            tree.Push(root);
+
+            while (tree.Count > 0)
+            {
+                FrameworkElement current = tree.Pop();
+                if (current.Name == name)
+                    return current;
+
+                int count = VisualTreeHelper.GetChildrenCount(current);
+                for (int i = 0; i < count; ++i)
+                {
+                    DependencyObject child = VisualTreeHelper.GetChild(current, i);
+                    if (child is FrameworkElement)
+                        tree.Push((FrameworkElement)child);
+                }
+            }
+
+            return null;
         }
     }
 }
