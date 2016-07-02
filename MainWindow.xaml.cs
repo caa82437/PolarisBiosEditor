@@ -81,7 +81,7 @@ namespace PolarisBiosEditor
                     limitOffset = getValueAtPosition(16, powerPointer + 0x39) + 0x01;
                     maxFreqOffset = 0x17;
 
-                    vidOffset = getValueAtPosition(16, powerPointer + 0x31) + 0x01;
+                    vidOffset = getValueAtPosition(16, powerPointer + 0x2F) + 0x01;
                     vidEntryCount = getValueAtPosition(8, powerPointer + vidOffset);
 
                     dpmOffset = getValueAtPosition(16, powerPointer + 0x2D) + 0x01;
@@ -97,8 +97,8 @@ namespace PolarisBiosEditor
 
                     if (!supportedDeviceID.Contains(deviceID)) {
                         MessageBox.Show("Unsupported BIOS (0x" + deviceID + ")", "WARNING", MessageBoxButton.OK, MessageBoxImage.Warning);
-                    } else if (dpmEntryCount != vidEntryCount) {
-                        MessageBox.Show("Invalid DPM/VID entries!", "WARNING", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    //} else if (dpmEntryCount != vidEntryCount) {
+                    //    MessageBox.Show("Invalid DPM/VID entries!", "WARNING", MessageBoxButton.OK, MessageBoxImage.Warning);
                     } else {
                         txtTDP.Text = getValueAtPosition(16, powerPointer + limitOffset).ToString();
                         txtTDC.Text = getValueAtPosition(16, powerPointer + limitOffset + 0x04).ToString();
