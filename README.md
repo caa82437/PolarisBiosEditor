@@ -1,11 +1,11 @@
-# PolarisBiosEditor v1.0
-![PREVIEW](http://puu.sh/pN3K1/4e53fb3f9d.png)
+# PolarisBiosEditor v1.1
+![PREVIEW](http://puu.sh/pO6PO/7e4b6ecce1.png)
 
-#### WARNING: THIS IS STILL A WIP!
-
-### TODO
-- Add memory frequency control
-- Add memory voltage control
+### v1.1
+- Updated GUI
+- Memory controls
+  - DPM
+  - VID
 
 ### v1.0
 - Power Controls
