@@ -1,5 +1,11 @@
-# PolarisBiosEditor v1.1
-![PREVIEW](http://puu.sh/pO6PO/7e4b6ecce1.png)
+# PolarisBiosEditor v1.2
+![PREVIEW](http://puu.sh/pR6zW/8ab3f63916.png)
+
+### v1.2
+- Rewrote BIOS handling interals
+- Updated GUI (again..)
+- Fan controls
+- VRAM controls
 
 ### v1.1
 - Updated GUI
