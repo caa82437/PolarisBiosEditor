@@ -380,7 +380,7 @@ namespace PolarisBiosEditor
         public MainWindow()
         {
             InitializeComponent();
-            MainWindow.GetWindow(this).Title += " 1.2";
+            MainWindow.GetWindow(this).Title += " 1.3";
 
             save.IsEnabled = false;
             boxROM.IsEnabled = false;
@@ -421,7 +421,7 @@ namespace PolarisBiosEditor
 
                     fixChecksum(false);
 
-                    if (false && !supportedDeviceID.Contains(deviceID)) {
+                    if (!supportedDeviceID.Contains(deviceID)) {
                         MessageBox.Show("Unsupported BIOS (0x" + deviceID + ")", "WARNING", MessageBoxButton.OK, MessageBoxImage.Warning);
                     } else {
                         atom_data_table = fromBytes<ATOM_DATA_TABLES>(buffer.Skip(atom_rom_header.usMasterDataTableOffset).ToArray());
@@ -484,6 +484,18 @@ namespace PolarisBiosEditor
                             NAME = "DeviceID",
                             VALUE = "0x" + atom_rom_header.usDeviceID.ToString("X")
                         });
+                        tableROM.Items.Add(new {
+                            NAME = "Sub ID",
+                            VALUE = "0x" + atom_rom_header.usSubsystemID.ToString("X")
+                        });
+                        tableROM.Items.Add(new {
+                            NAME = "Sub VendorID",
+                            VALUE = "0x" + atom_rom_header.usSubsystemVendorID.ToString("X")
+                        });
+                        tableROM.Items.Add(new {
+                            NAME = "Firmware Signature",
+                            VALUE = "0x" + atom_rom_header.uaFirmWareSignature.ToString("X")
+                        });
 
                         tablePOWERPLAY.Items.Clear();
                         tablePOWERPLAY.Items.Add(new {
@@ -493,6 +505,10 @@ namespace PolarisBiosEditor
                         tablePOWERPLAY.Items.Add(new {
                             NAME = "Max Memory Freq. (MHz)",
                             VALUE = atom_powerplay_table.ulMaxODMemoryClock / 100
+                        });
+                        tablePOWERPLAY.Items.Add(new {
+                            NAME = "Power Control Limit (%)",
+                            VALUE = atom_powerplay_table.usPowerControlLimit
                         });
 
                         tablePOWERTUNE.Items.Clear();
@@ -700,10 +716,12 @@ namespace PolarisBiosEditor
                         atom_rom_header.usVendorID = (UInt16)num;
                     } else if (name == "DeviceID") {
                         atom_rom_header.usDeviceID = (UInt16)num;
-                    } else if (name == "VRAM Size (MB)") {
-                        atom_vram_entries[0].usMemorySize = (UInt16)num;
-                    } else if (name == "VRAM Density") {
-                        atom_vram_entries[0].ucDensity = (Byte)num;
+                    } else if (name == "Sub ID") {
+                        atom_rom_header.usSubsystemID = (UInt16)num;
+                    } else if (name == "Sub VendorID") {
+                        atom_rom_header.usSubsystemVendorID = (UInt16)num;
+                    } else if (name == "Firmware Signature") {
+                        atom_rom_header.uaFirmWareSignature = (UInt32)num;
                     }
                 }
 
@@ -717,6 +735,8 @@ namespace PolarisBiosEditor
                         atom_powerplay_table.ulMaxODEngineClock = (UInt32)(num * 100);
                     } else if (name == "Max Memory Freq. (MHz)") {
                         atom_powerplay_table.ulMaxODMemoryClock = (UInt32)(num * 100);
+                    } else if (name == "Power Control Limit (%)") {
+                        atom_powerplay_table.usPowerControlLimit = (UInt16)num;
                     }
                 }
 

@@ -1,8 +1,16 @@
-# PolarisBiosEditor v1.2
-![PREVIEW](http://puu.sh/pR6zW/8ab3f63916.png)
+# PolarisBiosEditor v1.3
+![PREVIEW](http://puu.sh/pRjD9/e085caaf23.png)
+
+### v1.3
+- ROM
+  - Sub ID
+  - Sub VendorID
+  - Firmware Signature
+- PowerPlay
+  - Power Control Limit
 
 ### v1.2
-- Rewrote BIOS handling interals
+- Rewrote BIOS handling internals
 - Updated GUI (again..)
 - Fan controls
 - VRAM controls

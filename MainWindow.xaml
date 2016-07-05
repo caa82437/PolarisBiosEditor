@@ -253,7 +253,7 @@
                                         <ColumnDefinition />
                                         <ColumnDefinition Width="2*" />
                                     </Grid.ColumnDefinitions>
-                                    <TextBlock x:Name="MHZ" Text="{Binding MHZ, Mode=OneWay}" FontSize="10" TextAlignment="Left" Grid.Column="0"/>
+                                    <TextBlock x:Name="MHZ" Text="{Binding MHZ, Mode=OneWay}" FontSize="10" TextAlignment="Center" Grid.Column="0"/>
                                     <TextBox x:Name="VALUE" Text="{Binding VALUE, Mode=OneWay}" FontSize="10" TextAlignment="Center" Grid.Column="1"/>
                                 </Grid>
                             </DataTemplate>
