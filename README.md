@@ -1,5 +1,10 @@
-# PolarisBiosEditor v1.3
+# PolarisBiosEditor v1.4
 ![PREVIEW](http://puu.sh/pRjD9/e085caaf23.png)
+
+### v1.4
+- Minor fixes
+- Added validation
+- Ability to load an unsupported BIOS
 
 ### v1.3
 - ROM

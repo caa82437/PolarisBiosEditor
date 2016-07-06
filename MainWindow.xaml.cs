@@ -18,7 +18,7 @@ namespace PolarisBiosEditor
     {
         Byte[] buffer;
         Int32Converter int32 = new Int32Converter();
-        string[] supportedDeviceID = new string[] { "67DF" };
+        string[] supportedDeviceID = new string[] { "67DF", "1002" };
         string deviceID = "";
 
         int atom_rom_checksum_offset = 0x21;
@@ -380,7 +380,7 @@ namespace PolarisBiosEditor
         public MainWindow()
         {
             InitializeComponent();
-            MainWindow.GetWindow(this).Title += " 1.3";
+            MainWindow.GetWindow(this).Title += " 1.4";
 
             save.IsEnabled = false;
             boxROM.IsEnabled = false;
@@ -410,20 +410,26 @@ namespace PolarisBiosEditor
                 tableFAN.Items.Clear();
                 tableGPU.Items.Clear();
                 tableMEMORY.Items.Clear();
+                tableVRAM.Items.Clear();
+                tableVRAM_TIMING.Items.Clear();
 
                 System.IO.Stream fileStream = openFileDialog.OpenFile();
+                if (fileStream.Length < 524288) {
+                    MessageBox.Show("This BIOS is less than the standard 512KB size.\nFlashing this BIOS may corrupt your graphics card.", "WARNING", MessageBoxButton.OK, MessageBoxImage.Warning);
+                }
                 using (BinaryReader br = new BinaryReader(fileStream)) {
                     buffer = br.ReadBytes((int)fileStream.Length);
 
                     atom_rom_header_offset = getValueAtPosition(16, atom_rom_header_ptr);
                     atom_rom_header = fromBytes<ATOM_ROM_HEADER>(buffer.Skip(atom_rom_header_offset).ToArray());
                     deviceID = atom_rom_header.usDeviceID.ToString("X");
-
                     fixChecksum(false);
 
+                    MessageBoxResult msgSuported = MessageBoxResult.Yes;
                     if (!supportedDeviceID.Contains(deviceID)) {
-                        MessageBox.Show("Unsupported BIOS (0x" + deviceID + ")", "WARNING", MessageBoxButton.OK, MessageBoxImage.Warning);
-                    } else {
+                        msgSuported = MessageBox.Show("Unsupported DeviceID 0x" + deviceID + " - Continue?", "WARNING", MessageBoxButton.YesNo, MessageBoxImage.Warning);
+                    }
+                    if (msgSuported == MessageBoxResult.Yes) {
                         atom_data_table = fromBytes<ATOM_DATA_TABLES>(buffer.Skip(atom_rom_header.usMasterDataTableOffset).ToArray());
                         atom_powerplay_offset = atom_data_table.PowerPlayInfo;
                         atom_powerplay_table = fromBytes<ATOM_POWERPLAY_TABLE>(buffer.Skip(atom_powerplay_offset).ToArray());
@@ -801,6 +807,9 @@ namespace PolarisBiosEditor
 
                     atom_sclk_entries[i].ulSclk = (UInt32)mhz;
                     atom_vddc_entries[atom_sclk_entries[i].ucVddInd].usVdd = (UInt16)mv;
+                    if (mv < 0xFF00) {
+                        atom_sclk_entries[i].usVddcOffset = 0;
+                    }
                 }
 
                 for (var i = 0; i < tableMEMORY.Items.Count; i++) {
